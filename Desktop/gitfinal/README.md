@@ -1,99 +1,212 @@
-# Backend Readme on functionality
+# Full Stack Project Technical Analysis
 
+## Course Activity: Full Stack Project Analysis and Technical Evaluation
 
-## How it works
+### Objective
 
-The backend exposes a single endpoint. When the frontend calls it with a metric type, the backend fetches hardcoded records, picks the right column, and returns a simplified list of `{ label, value }` pairs ready for charting.
+The purpose of this project is to analyze and evaluate the architecture, code organization, design patterns, and development practices implemented in a Full Stack application composed of:
 
+* A **Spring Boot Backend**
+* A **React Frontend**
+
+The analysis focuses on identifying the main architectural components, understanding their responsibilities, documenting the request and data flow, and proposing technical improvements.
+
+---
+
+## Analyzed Repositories
+
+### Backend Repository
+
+Repository analyzed:
+
+`Desktop/gitfinal`
+
+Technology Stack:
+
+* Java
+* Spring Boot
+* Maven
+* REST API
+
+Documentation:
+
+➡️ See: **README_BACKEND.md**
+
+---
+
+### Frontend Repository
+
+Repository analyzed:
+
+https://github.com/franciscogomez2722/gitFinalFrontProgramacionWeb
+
+Technology Stack:
+
+* React
+* Vite
+* Axios
+* Chart.js
+* React ChartJS 2
+
+Documentation:
+
+➡️ See: **README_FRONTEND.md**
+
+---
+
+# Project Architecture Overview
+
+```mermaid
+flowchart LR
+
+    User[User]
+
+    Frontend[React Frontend]
+    Backend[Spring Boot Backend]
+
+    Controller[Controller Layer]
+    Service[Service Layer]
+    Repository[Repository Layer]
+
+    Data[(Data Source)]
+
+    User --> Frontend
+    Frontend -->|HTTP Request| Backend
+
+    Backend --> Controller
+    Controller --> Service
+    Service --> Repository
+    Repository --> Data
+
+    Data --> Repository
+    Repository --> Service
+    Service --> Controller
+    Controller --> Frontend
+    Frontend --> User
 ```
-GET /metrics/{metric}
-         ↓
-Controller extracts the metric name from the URL
-         ↓
-Service fetches all 4 hardcoded DeveloperMetric records
-         ↓
-For each record → builds { label: date, value: <chosen metric> }
-         ↓
-Returns JSON array to the frontend
+
+---
+
+# Deliverables
+
+## Part 1 – Backend Analysis
+
+The backend analysis includes:
+
+* Project structure
+* Controller layer
+* Service layer
+* Repository layer
+* DTO analysis
+* Entity/Model analysis
+* Request flow
+* Security and CORS configuration
+* Technical improvement proposals
+* Architecture diagrams
+
+Documentation:
+
+📄 **README_BACKEND.md**
+
+---
+
+## Part 2 – Frontend Analysis
+
+The frontend analysis includes:
+
+* Folder structure
+* Main React components
+* State management with Hooks
+* API consumption
+* Data flow between components
+* Charts and visualizations
+* Technical improvement proposals
+* Architecture diagrams
+
+Documentation:
+
+📄 **README_FRONTEND.md**
+
+---
+
+# Full Stack Request Flow
+
+```mermaid
+sequenceDiagram
+
+    participant User
+    participant React
+    participant Controller
+    participant Service
+    participant Repository
+    participant Data
+
+    User->>React: Interacts with dashboard
+
+    React->>Controller: HTTP GET /metrics/commits
+
+    Controller->>Service: Request business data
+
+    Service->>Repository: Retrieve metric information
+
+    Repository->>Data: Query data source
+
+    Data-->>Repository: Return data
+
+    Repository-->>Service: Return metrics
+
+    Service-->>Controller: Return processed data
+
+    Controller-->>React: JSON response
+
+    React-->>User: Render dashboard and charts
 ```
 
-Valid values for `{metric}`: `commits`, `bugs`, `tasks`, `storyPoints`
+---
+
+# Main Findings
+
+## Backend
+
+### Strengths
+
+* Clear layered architecture
+* Separation of concerns
+* RESTful API design
+* Simple and maintainable structure
+
+### Opportunities for Improvement
+
+* Add persistent database integration
+* Improve DTO usage consistency
+* Expand security configuration
+* Improve validation and exception handling
 
 ---
 
-## Layers
+## Frontend
 
-### Entry Point — `DemoApplication.java`
-Bootstraps the Spring context and starts the embedded Tomcat server. Nothing custom here.
+### Strengths
 
----
+* Simple React architecture
+* Dedicated service layer for API communication
+* Effective use of Hooks
+* Chart.js integration for data visualization
 
-### Controller — `MetricsController.java`
-- Listens on `GET /metrics/{metric}`
-- Reads the `{metric}` path variable from the URL
-- Passes it directly to the service
-- Returns whatever the service gives back as JSON no transformation
+### Opportunities for Improvement
 
----
-
-### Service — `MetricsService.java`
-This is where the core logic lives.
-- Calls the repository to get all records
-- Loops over them and for each one:
-  - Sets `label` = the date of that record (as a string)
-  - Uses a `switch` on the metric name to decide which number becomes `value`
-  - `commits` → commits field
-  - `bugs` → bugsFixed field
-  - `tasks` → tasksCompleted field
-  - `storyPoints` → storyPoints field
-  - Any unknown metric → value defaults to `0`
-- Returns a list of `MetricResponseDTO` objects
+* Add loading and error states
+* Use environment variables for API URLs
+* Improve component modularization
+* Add automated testing
+* Remove unused scaffold files
 
 ---
 
-### Entity — `DeveloperMetric.java`
-- Represents one full row of developer activity for one day
-- Fields: `developerName`, `metricDate`, `commits`, `bugsFixed`, `tasksCompleted`, `storyPoints`
-- This is the internal "full record" it knows everything about one data point
-- It is never persisted to a database; it is a plain Java object
+# Conclusion
 
----
+The analyzed Full Stack solution demonstrates a clear separation between frontend and backend responsibilities. The React frontend consumes metrics exposed by the Spring Boot backend and presents them through dashboard cards and visualizations.
 
-## DTOs
+While the implementation successfully demonstrates the fundamental concepts of Full Stack development, several improvements could increase maintainability, scalability, and production readiness, particularly in configuration management, error handling, testing, and architectural consistency.
 
-### `MetricResponseDTO` (used in `dto/` package)
-- This is what the frontend actually receives
-- Has only 2 fields `label` (the date as a string) and `value` (the metric number)
-- The service converts each full `DeveloperMetric` entity into this DTO
-- Its purpose is to hide all internal fields and only expose what the chart needs
-
-### `MetricRequestDTO` (unused — in `dto/` package)
-- Has one field: `metric` (a string)
-- Was likely intended to receive the metric type in a POST request body
-- **Never used anywhere in the code**
-- The metric type is passed through the URL path instead (`/metrics/commits`)
-- Dead code
-
----
-
-## Inconsistencies found
-
-### 1. Duplicate `MetricResponseDTO`
-There are two identical classes with the same name and fields (`label`, `value`):
-- `com.exampleback.demo.dto.MetricResponseDTO` this is the one actually used
-- `com.exampleback.demo.repository.MetricResponseDTO` this one is never referenced
-
-The one inside the `repository` package is a leftover copy and should be deleted.
-
-### 2. `MetricRequestDTO` is never used
-The class `dto/MetricRequestDTO.java` exists but is never injected, referenced, or consumed anywhere. The controller receives the metric type from the URL path variable, making this DTO completely redundant.
-
-### 3. No real database despite JPA and H2 being declared (hardcoded)
-
-### 4. Firebase Admin Hardcoded
-
-### 5. `application.properties` is nearly empty
-Only `spring.application.name=demo` is set. No port, no DB config, no environment specific settings.
-
----
-
+This repository contains the complete technical analysis of both application layers as required by the assignment.
